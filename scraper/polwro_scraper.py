@@ -1,5 +1,6 @@
 # polwro_scraper.py
 import os
+from xml.etree.ElementInclude import include
 import scrapy
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
@@ -43,6 +44,10 @@ class PolwroSpider(scrapy.Spider):
         'chemicy',
         'elektronicy',
         'jezykowcy'
+    }
+
+    included_keywords = {
+        'sportowcy'
     }
 
     custom_settings = {
@@ -102,19 +107,24 @@ class PolwroSpider(scrapy.Spider):
             # Continue with scraping
             yield scrapy.Request(
                 "https://polwro.com/opinie-o-prowadzacych", 
-                callback=self.parse_opinions
+                callback=self.parse_forums
             )
         else:
             self.logger.error("Login failed - not redirected to index.php")
             return
 
-    def parse_opinions(self, response):
+    def parse_forums(self, response):
         # Extract forum links (ones that contain '/f,')
         for link in response.css('a[href*="/f,"]::attr(href)').getall():
             try:
                 # Skip URLs containing excluded keywords
                 if any(keyword in link.lower() for keyword in self.excluded_keywords):
                     self.logger.info(f"Skipping excluded forum: {link}")
+                    continue
+
+                # Skip URLs not containing included keywords
+                if not any(keyword in link.lower() for keyword in self.included_keywords):
+                    self.logger.info(f"Skipping forum not containing included keywords: {link}")
                     continue
                     
                 # Extract forum ID (the integer after the last comma)
@@ -260,58 +270,3 @@ class PolwroSpider(scrapy.Spider):
         else:
             self.logger.info(f"No more pages found for topic: {response.url}")
 
-        # Handle pagination for topic pages
-        # parsed_url = urlparse(response.url)
-        # query_params = parse_qs(parsed_url.query)
-        # current_start = int(query_params.get('start', [0])[0])  # Default start is 0
-
-        # # Construct next page URL with incremented start parameter
-        # next_start = current_start + 25  # Increment by 25 for next page
-
-        # # Create next page URL while preserving other parameters
-        # base_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-        # new_params = query_params.copy()
-        # new_params['start'] = [str(next_start)]
-
-        # # Check if there are more posts on the current page
-        # if response.css('ul.gradient_post'):
-        #     next_page_url = f"{base_url}?{'&'.join(f'{k}={v[0]}' for k, v in new_params.items())}"
-        #     self.logger.info(f"Requesting next topic page: {next_page_url}")
-        #     yield scrapy.Request(next_page_url, callback=self.parse_topic)
-        # else:
-        #     self.logger.info(f"No more posts found on page, ending pagination for: {response.url}")
-
-
-if __name__ == '__main__':
-
-    full_scan = True  # Set to True for a full scan
-    settings = {
-        "USER_AGENT": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "FEEDS": {
-            "opinions.json": {
-                "format": "json",
-                "encoding": "utf-8",
-                "indent": 2,
-                "ensure_ascii": False,
-                "overwrite": not full_scan,  # Append if full scan
-            },
-        },
-        "LOG_LEVEL": "WARNING",  # Set to WARNING to reduce log verbosity
-        "DOWNLOAD_DELAY": (
-            2 if full_scan else 1
-        ),  # Be more conservative during full scan
-    }
-
-    process = CrawlerProcess(settings)
-
-    # Load credentials from environment variables
-    login = os.getenv("POLWRO_USERNAME")
-    password = os.getenv("POLWRO_PASSWORD")
-
-    if not login or not password:
-        raise ValueError(
-            "Missing POLWRO_USERNAME or POLWRO_PASSWORD environment variables"
-        )
-
-    process.crawl(PolwroSpider, login=login, password=password, full_scan=full_scan)
-    process.start()

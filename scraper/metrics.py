@@ -1,6 +1,5 @@
 from prometheus_client import Summary, Counter, Histogram
 
-# Scraping time metrics
 FORUM_SCRAPE_TIME = Summary(
     'polwro_forum_scrape_seconds',
     'Time spent scraping a forum page'
@@ -11,7 +10,6 @@ TOPIC_SCRAPE_TIME = Summary(
     'Time spent scraping a topic page'
 )
 
-# Success/Error counters
 SCRAPE_SUCCESS_COUNTER = Counter(
     'polwro_scrape_success_total',
     'Total number of successful scraping operations'
@@ -22,7 +20,6 @@ SCRAPE_ERROR_COUNTER = Counter(
     'Total number of failed scraping operations'
 )
 
-# Opinion metrics
 OPINIONS_SCRAPED = Counter(
     'polwro_opinions_total',
     'Total number of opinions scraped'
@@ -33,11 +30,10 @@ OPINIONS_ERROR = Counter(
     'Total number of errors during opinion scraping'
 )
 
-# Rating metrics
 RATING_HISTOGRAM = Histogram(
     'polwro_opinion_rating',
     'Distribution of professor ratings',
-    buckets=[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+    buckets=[2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5]
 )
 
 VOTE_RATE_HISTOGRAM = Histogram(

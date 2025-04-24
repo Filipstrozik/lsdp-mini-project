@@ -8,6 +8,12 @@ from langdetect import detect
 import time
 from scraper.metrics import LANGUAGE_COUNTER, LANGUAGE_DETECTION_TIME
 from pymongo import MongoClient
+from transformers import AutoTokenizer, AutoModel
+import torch
+
+# Load HerBERT model and tokenizer globally to avoid reloading for every task
+tokenizer = AutoTokenizer.from_pretrained("allegro/herbert-base-cased")
+model = AutoModel.from_pretrained("allegro/herbert-base-cased")
 
 logger = logging.getLogger(__name__)
 
@@ -82,15 +88,30 @@ def detect_language(post_data):
 @shared_task(name="text_vectorizer")
 def text_vectorizer(post_data):
     """
-    Process Polish reviews for text vectorization and save to MongoDB.
+    Process Polish reviews for text vectorization using HerBERT and save to MongoDB.
     """
     try:
-        post_data["vectors"] = []  
+        # Tokenize the review text
+        tokens = tokenizer(
+            post_data["review"],
+            return_tensors="pt",
+            truncation=True,
+            padding=True,
+            max_length=512,
+        )
 
+        # Generate vector embeddings using HerBERT
+        with torch.no_grad():
+            outputs = model(**tokens)
+            # Use the [CLS] token representation as the vector
+            post_data["vectors"] = outputs.last_hidden_state[:, 0, :].squeeze().tolist()
+
+        # Chain to save the vectorized data to MongoDB
         chain(save_to_mongo.s(post_data))()
     except Exception as e:
         logger.error(f"Text vectorization error: {str(e)}")
         return None
+
 
 @shared_task(name="save_to_mongo")
 def save_to_mongo(vectorized_data):

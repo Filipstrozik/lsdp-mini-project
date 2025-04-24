@@ -10,3 +10,7 @@ scrapy
 nest_asyncio
 langdetect
 pymongo
+torch
+transformers
+protobuf
+sacremoses
