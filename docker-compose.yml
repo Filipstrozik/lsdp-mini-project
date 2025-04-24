@@ -1,0 +1,144 @@
+services:
+  # Application services
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - scraper_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"  # RabbitMQ port
+      - "15672:15672"  # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    networks:
+      - scraper_network   # Add this line
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - scraper_network
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+
+  app:
+    build: .
+    command: python -m prometheus_exporter
+    volumes:
+      - .:/app
+      - ./tmp/prometheus:/tmp/prometheus
+    ports:
+      - "8000:8000"  # Metrics endpoint
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+    networks:
+      - scraper_network
+    env_file:
+      - .env
+
+  celery_worker:
+    build: .
+    command: celery -A celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+      - ./tmp/prometheus:/tmp/prometheus
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+    ports:
+      - "8001:8001"  # Metrics endpoint for worker
+    networks:
+      - scraper_network
+    env_file:
+      - .env
+
+  celery_beat:
+    build: .
+    command: celery -A celery_app beat --loglevel=info
+    volumes:
+      - .:/app
+      - ./tmp/prometheus:/tmp/prometheus
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+    ports:
+      - "8002:8001"  # Metrics endpoint for beat
+    networks:
+      - scraper_network
+    env_file:
+      - .env
+
+  scraper_init:
+    build: .
+    command: sh -c "sleep 10 && celery -A celery_app call scraper.tasks.run_polwro_scraper"
+    depends_on:
+      - app
+      - celery_worker
+      - mongodb
+    networks:
+      - scraper_network
+
+  # Monitoring services
+  prometheus:
+    image: prom/prometheus:latest
+    environment:
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
+    volumes:
+      - ./config/prometheus_config.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+      - ./tmp/prometheus:/tmp/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - scraper_network
+    depends_on:
+      - app
+      - celery_worker
+      - celery_beat
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_password
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    networks:
+      - scraper_network
+    depends_on:
+      - prometheus
+
+networks:
+  scraper_network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  mongodb_data:
