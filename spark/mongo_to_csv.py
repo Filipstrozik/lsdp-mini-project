@@ -16,6 +16,9 @@ def get_mongodb_data(host, port, username, password, db_name, collection_name):
 def save_to_csv(documents, output_path):
     """Convert documents to DataFrame and save to CSV."""
     df = pd.DataFrame(documents)
+    # Convert vector arrays to string with space separator
+    if 'vectors' in df.columns:
+        df['vectors'] = df['vectors'].apply(lambda x: ' '.join(map(str, x)))
     df.to_csv(output_path, index=False, encoding="utf-8-sig")
     print(f"DataFrame shape: {df.shape}")
     print(f"Data saved to: {output_path}")

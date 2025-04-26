@@ -61,17 +61,17 @@ services:
   #     - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
   #   command: ["python3", "/app/main.py"]
 
-  # save_to_csv:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.spark
-  #   container_name: "save_to_csv"
-  #   depends_on:
-  #     - mongodb
-  #   volumes:
-  #     - ./spark/mongo_to_csv.py:/app/mongo_to_csv.py
-  #     - ./spark/data:/app/data
-  #   command: ["python3", "/app/mongo_to_csv.py", "--host", "mongodb", "--output", "/app/data/vectorized_reviews.csv"]
+  save_to_csv:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: "save_to_csv"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./spark/mongo_to_csv.py:/app/mongo_to_csv.py
+      - ./spark/data:/app/data
+    command: ["python3", "/app/mongo_to_csv.py", "--host", "mongodb", "--output", "/app/data/vectorized_reviews.csv"]
 
   spark-history:
     build:
