@@ -1,0 +1,96 @@
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+
+  spark-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: "spark-master"
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "7077:7077"  # Spark master port
+      - "8080:8080"  # Spark web UI
+    volumes:
+      - ./spark/results:/app/results
+      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./spark/events:/app/events
+
+  spark-worker:
+    build:
+      context: . 
+      dockerfile: Dockerfile.spark
+    image: "bitnami/spark:latest"
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=6G
+      - SPARK_WORKER_CORES=2
+    volumes:
+      - ./spark/results:/app/results 
+      - ./spark/data:/opt/bitnami/spark/data
+      - ./spark/events:/app/events
+      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+
+  # spark-app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.spark
+  #   container_name: "spark-app"
+  #   ports:
+  #     - "4040:4040"
+  #   depends_on:
+  #     - spark-master
+  #     - spark-worker
+  #   environment:
+  #     - SPARK_MASTER_URL=spark://spark-master:7077
+  #     - PYTHONPATH=/opt/bitnami/spark/python/lib/py4j-0.10.9.7-src.zip:/opt/bitnami/spark/python/
+  #   volumes:
+  #     - ./spark/main.py:/app/main.py
+  #     - ./spark/data:/opt/bitnami/spark/data
+  #     - ./spark/results:/app/results  # Add this line
+  #     - ./spark/events:/app/events
+  #     - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+  #   command: ["python3", "/app/main.py"]
+
+  # save_to_csv:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.spark
+  #   container_name: "save_to_csv"
+  #   depends_on:
+  #     - mongodb
+  #   volumes:
+  #     - ./spark/mongo_to_csv.py:/app/mongo_to_csv.py
+  #     - ./spark/data:/app/data
+  #   command: ["python3", "/app/mongo_to_csv.py", "--host", "mongodb", "--output", "/app/data/vectorized_reviews.csv"]
+
+  spark-history:
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
+    container_name: "spark-history"
+    environment:
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=/app/events -Dspark.eventLog.enabled=true
+    ports:
+      - "18080:18080" 
+    volumes:
+      - ./spark/results:/app/results
+      - ./spark/events:/app/events
+      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+    command: >
+      /opt/bitnami/spark/bin/spark-class
+      org.apache.spark.deploy.history.HistoryServer
+
+
+volumes:
+  mongodb_data:
+  spark_data:

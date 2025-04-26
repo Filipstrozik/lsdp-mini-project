@@ -1,0 +1,110 @@
+x-redash-service: &redash-service
+  image: redash/redash:10.1.0.b50633
+  depends_on:
+    - postgres
+    - redis
+  environment:
+    REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
+    REDASH_REDIS_URL: redis://redis:6379/0
+    REDASH_WEB_WORKERS: 4
+    REDASH_ADHOC_QUERY_WORKERS: 2
+    REDASH_SCHEDULER_WORKERS: 1
+    REDASH_LOG_LEVEL: DEBUG
+    REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+    REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+  restart: always
+services:
+  server:
+    <<: *redash-service
+    command: server
+    ports:
+      - "5001:5000"
+    environment:
+      REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
+      REDASH_REDIS_URL: redis://redis:6379/0
+      REDASH_WEB_WORKERS: 4
+      REDASH_ADHOC_QUERY_WORKERS: 2
+      REDASH_SCHEDULER_WORKERS: 1
+      REDASH_LOG_LEVEL: DEBUG
+      REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+      REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+  scheduler:
+    <<: *redash-service
+    command: scheduler
+    depends_on:
+      - server
+  scheduled_worker:
+    <<: *redash-service
+    command: worker
+    depends_on:
+      - server
+    environment:
+      REDASH_REDIS_URL: redis://redis:6379/0
+      QUEUES: "scheduled_queries,schemas"
+      WORKERS_COUNT: 1
+      REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+      REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
+      REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+  adhoc_worker:
+    <<: *redash-service
+    command: worker
+    depends_on:
+      - server
+    environment:
+      REDASH_REDIS_URL: redis://redis:6379/0
+      REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
+      QUEUES: "queries"
+      WORKERS_COUNT: 2
+      REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+      REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+  postgres:
+    image: pgautoupgrade/pgautoupgrade:latest
+    environment:
+      POSTGRES_USER: redash
+      POSTGRES_PASSWORD: redash
+      POSTGRES_DB: redash
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+  # nginx:
+  #   image: redash/nginx:latest
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - server
+  #   links:
+  #     - server:redash
+  #   restart: always
+  worker:
+    <<: *redash-service
+    command: worker
+    environment:
+      QUEUES: "periodic,emails,default"
+      WORKERS_COUNT: 1
+      REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+      REDASH_REDIS_URL: redis://redis:6379/0
+      REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
+      REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+
+volumes:
+    redis_data:
+    postgres_data:
+    mongodb_data:

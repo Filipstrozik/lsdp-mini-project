@@ -1,2 +1,4 @@
 .env
 /tmp
+/postgres-data
+/spark/data

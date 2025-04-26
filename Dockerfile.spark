@@ -1,0 +1,9 @@
+FROM bitnami/spark:latest
+
+USER root
+
+# Install Python dependencies
+COPY requirements_spark.txt /app/requirements_spark.txt
+RUN pip install -r /app/requirements_spark.txt
+
+USER 1001

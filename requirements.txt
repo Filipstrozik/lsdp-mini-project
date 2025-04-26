@@ -14,3 +14,5 @@ torch
 transformers
 protobuf
 sacremoses
+pyspark
+numpy

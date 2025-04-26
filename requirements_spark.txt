@@ -1,0 +1,9 @@
+celery>=5.2.7
+redis>=4.3.4
+requests>=2.28.1
+PyYAML>=6.0
+pymongo
+torch
+pyspark
+numpy
+pandas
