@@ -1,4 +1,5 @@
 # scraper/tasks.py
+from datetime import datetime
 import logging
 from celery import Celery, shared_task, chain
 from scrapy.crawler import CrawlerProcess
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task()
-def run_polwro_scraper(full_scan=False):
+def run_polwro_scraper(full_scan=True):
     """
     Task to run the PolWro scraper
     Args:
@@ -116,15 +117,38 @@ def text_vectorizer(post_data):
 @shared_task(name="save_to_mongo")
 def save_to_mongo(vectorized_data):
     """
-    Save vectorized data to MongoDB collection
+    Save vectorized data to MongoDB collection and update last opinion date
     """
     try:
         client = MongoClient("mongodb://root:example@mongodb:27017/")
         db = client["reviews_db"]
         collection = db["vectorized_reviews"]
+        metadata_collection = db["scraping_metadata"]
         
         if vectorized_data and '_id' not in vectorized_data:
+            # Ensure date is datetime object
+            if isinstance(vectorized_data.get('date'), str):
+                try:
+                    if ',' in vectorized_data['date']:
+                        vectorized_data['date'] = datetime.strptime(vectorized_data['date'], '%Y-%m-%d, %H:%M')
+                    else:
+                        vectorized_data['date'] = datetime.strptime(vectorized_data['date'], '%Y-%m-%d')
+                except ValueError as e:
+                    logger.error(f"Date parsing error: {e}")
+                    return None
+            
+            # Save the review
             result = collection.insert_one(vectorized_data)
+            
+            # Update last opinion date if present in the data
+            if 'date' in vectorized_data:
+                metadata_collection.update_one(
+                    {"_id": "last_opinion_date"},
+                    {"$max": {"date": vectorized_data["date"]}},
+                    upsert=True
+                )
+                logger.info(f"Updated last opinion date to: {vectorized_data['date']}")
+            
             return str(result.inserted_id)
         else:
             logger.warning("No data to save or document already exists")

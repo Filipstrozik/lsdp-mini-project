@@ -13,8 +13,8 @@ result_serializer = "json"
 beat_schedule = {
     "scrape-polwro-full-daily": {
         "task": "scraper.tasks.run_polwro_scraper",
-        "schedule": timedelta(days=2),  # Run every day
-        "kwargs": {"full_scan": True},
+        "schedule": timedelta(days=1),  # Run every day
+        "kwargs": {"full_scan": False},
     }
 }
 

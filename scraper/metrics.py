@@ -30,16 +30,17 @@ OPINIONS_ERROR = Counter(
     'Total number of errors during opinion scraping'
 )
 
-RATING_HISTOGRAM = Histogram(
-    'polwro_opinion_rating',
-    'Distribution of professor ratings',
-    buckets=[2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5]
+RATING_COUNTER = Counter(
+    'polwro_opinion_rating_total',
+    'Count of professor ratings by rating value',
+    ['rating']  # Label for different rating values
 )
 
+
 VOTE_RATE_HISTOGRAM = Histogram(
-    'polwro_opinion_vote_rate',
-    'Distribution of opinion vote rates',
-    buckets=[0, 1, 2, 3, 4, 5, 10, 20, 50, 100]
+    "polwro_opinion_vote_rate",
+    "Distribution of opinion vote rates",
+    buckets=[-100, -50, -20, -10, -5, -1, 0, 1, 5, 10, 20, 50, 100],
 )
 
 # Course metrics

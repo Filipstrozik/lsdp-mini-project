@@ -82,7 +82,8 @@ services:
       - scraper_network
     env_file:
       - .env
-
+      
+  # uncoment for initial run
   # scraper_init:
   #   build: .
   #   command: sh -c "sleep 10 && celery -A celery_app call scraper.tasks.run_polwro_scraper"

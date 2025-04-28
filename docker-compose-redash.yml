@@ -28,11 +28,24 @@ services:
       REDASH_LOG_LEVEL: DEBUG
       REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
       REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+
   scheduler:
     <<: *redash-service
     command: scheduler
     depends_on:
       - server
+      - mongodb
+      - redis
+    environment:
+      REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
+      REDASH_REDIS_URL: redis://redis:6379/0
+      REDASH_WEB_WORKERS: 4
+      REDASH_ADHOC_QUERY_WORKERS: 2
+      REDASH_SCHEDULER_WORKERS: 1
+      REDASH_LOG_LEVEL: DEBUG
+      REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+      REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+
   scheduled_worker:
     <<: *redash-service
     command: worker
@@ -50,7 +63,13 @@ services:
     command: worker
     depends_on:
       - server
+    deploy:
+      resources:
+        limits:
+          memory: 3G
     environment:
+      REDASH_QUERY_RESULTS_CLEANUP_ENABLED: "true"
+      REDASH_QUERY_RESULTS_CLEANUP_MAX_AGE: "7"
       REDASH_REDIS_URL: redis://redis:6379/0
       REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
       QUEUES: "queries"
