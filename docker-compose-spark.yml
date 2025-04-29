@@ -1,13 +1,13 @@
 services:
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=example
+  # mongodb:
+  #   image: mongo:latest
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongodb_data:/data/db
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=root
+  #     - MONGO_INITDB_ROOT_PASSWORD=example
 
   spark-master:
     build:
@@ -40,38 +40,39 @@ services:
       - ./spark/events:/app/events
       - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
 
-  # spark-app:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.spark
-  #   container_name: "spark-app"
-  #   ports:
-  #     - "4040:4040"
-  #   depends_on:
-  #     - spark-master
-  #     - spark-worker
-  #   environment:
-  #     - SPARK_MASTER_URL=spark://spark-master:7077
-  #     - PYTHONPATH=/opt/bitnami/spark/python/lib/py4j-0.10.9.7-src.zip:/opt/bitnami/spark/python/
-  #   volumes:
-  #     - ./spark/main.py:/app/main.py
-  #     - ./spark/data:/opt/bitnami/spark/data
-  #     - ./spark/results:/app/results  # Add this line
-  #     - ./spark/events:/app/events
-  #     - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
-  #   command: ["python3", "/app/main.py"]
-
-  save_to_csv:
+  spark-app:
     build:
       context: .
       dockerfile: Dockerfile.spark
-    container_name: "save_to_csv"
+    container_name: "spark-app"
+    # ports:
+      # - "4040:4040"
     depends_on:
-      - mongodb
+      - spark-master
+      - spark-worker
+    environment:
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - PYTHONPATH=/opt/bitnami/spark/python/lib/py4j-0.10.9.7-src.zip:/opt/bitnami/spark/python/
     volumes:
-      - ./spark/mongo_to_csv.py:/app/mongo_to_csv.py
-      - ./spark/data:/app/data
-    command: ["python3", "/app/mongo_to_csv.py", "--host", "mongodb", "--output", "/app/data/vectorized_reviews.csv"]
+      - ./spark/main.py:/app/main.py
+      - ./spark/data:/opt/bitnami/spark/data
+      - ./spark/results:/app/results  # Add this line
+      - ./spark/events:/app/events
+      - ./config/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      - ./spark/models:/app/models:rw
+    command: ["python3", "/app/main.py"]
+
+  # save_to_csv:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.spark
+  #   container_name: "save_to_csv"
+  #   depends_on:
+  #     - mongodb
+  #   volumes:
+  #     - ./spark/mongo_to_csv.py:/app/mongo_to_csv.py
+  #     - ./spark/data:/app/data
+  #   command: ["python3", "/app/mongo_to_csv.py", "--host", "mongodb", "--output", "/app/data/vectorized_reviews.csv"]
 
   spark-history:
     build:

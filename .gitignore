@@ -2,3 +2,5 @@
 /tmp
 /postgres-data
 /spark/data
+/spark/models
+/spark/events
