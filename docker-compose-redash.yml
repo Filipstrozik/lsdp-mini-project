@@ -12,7 +12,6 @@ x-redash-service: &redash-service
     REDASH_LOG_LEVEL: DEBUG
     REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
     REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
-  # restart: always
 services:
   server:
     <<: *redash-service
@@ -77,7 +76,7 @@ services:
       REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
       REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
   redis:
-    image: redis:latest
+    image: redis:6.2
     ports:
       - "6379:6379"
     volumes:
@@ -92,15 +91,6 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
-  # nginx:
-  #   image: redash/nginx:latest
-  #   ports:
-  #     - "80:80"
-  #   depends_on:
-  #     - server
-  #   links:
-  #     - server:redash
-  #   restart: always
   worker:
     <<: *redash-service
     command: worker

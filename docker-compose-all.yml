@@ -1,0 +1,235 @@
+x-redash-environment: &redash-environment
+  REDASH_DATABASE_URL: postgres://redash:redash@postgres/redash
+  REDASH_REDIS_URL: redis://redis:6379/0
+  REDASH_WEB_WORKERS: 4
+  REDASH_ADHOC_QUERY_WORKERS: 2
+  REDASH_SCHEDULER_WORKERS: 1
+  REDASH_LOG_LEVEL: DEBUG
+  REDASH_COOKIE_SECRET: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+  REDASH_SECRET_KEY: 5fa8d71f0203866ae9e8099c3a76cabd89cf7b2fa51ae39b4ad745125e7e1dfa
+
+x-redash-service: &redash-service
+  image: redash/redash:10.1.0.b50633
+  platform: linux/amd64
+  depends_on:
+    - postgres
+    - redis
+  environment: *redash-environment
+  networks:
+    - scraper_network
+
+services:
+  # Infrastructure Services
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - scraper_network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    networks:
+      - scraper_network
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - scraper_network
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    restart: unless-stopped
+
+  postgres:
+    image: pgautoupgrade/pgautoupgrade:latest
+    environment:
+      POSTGRES_USER: redash
+      POSTGRES_PASSWORD: redash
+      POSTGRES_DB: redash
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    networks:
+      - scraper_network
+    restart: unless-stopped
+
+  # Application Services
+  app:
+    build: .
+    command: python -m prometheus_exporter
+    volumes:
+      - .:/app
+      - ./tmp/prometheus:/tmp/prometheus
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+    networks:
+      - scraper_network
+    env_file:
+      - .env
+
+  celery_worker:
+    build: .
+    command: celery -A celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+      - ./tmp/prometheus:/tmp/prometheus
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+    ports:
+      - "8001:8001"
+    networks:
+      - scraper_network
+    env_file:
+      - .env
+
+  celery_beat:
+    build: .
+    command: celery -A celery_app beat --loglevel=info
+    volumes:
+      - .:/app
+      - ./tmp/prometheus:/tmp/prometheus
+    depends_on:
+      - redis
+      - rabbitmq
+      - mongodb
+    ports:
+      - "8002:8001"
+    networks:
+      - scraper_network
+    env_file:
+      - .env
+
+    # uncoment for initial run DO NOT REMOVE
+    # scraper_init:
+    #   build: .
+    #   command: sh -c "sleep 10 && celery -A celery_app call scraper.tasks.run_polwro_scraper"
+    #   depends_on:
+    #     - app
+    #     - celery_worker
+    #     - mongodb
+    #   networks:
+    #     - scraper_network
+
+  # Redash Services
+  redash_server:
+    <<: *redash-service
+    command: server
+    ports:
+      - "5001:5000"
+    depends_on:
+      - postgres
+      - redis
+      - mongodb
+
+  #  DO NOT REMOVE
+  # redash_scheduler:
+  #   <<: *redash-service
+  #   command: scheduler
+  #   depends_on:
+  #     - redash_server
+  #     - mongodb
+  #     - redis
+
+  redash_scheduled_worker:
+    <<: *redash-service
+    command: worker
+    depends_on:
+      - redash_server
+    environment:
+      <<: *redash-environment
+      QUEUES: "scheduled_queries,schemas"
+      WORKERS_COUNT: 1
+
+  redash_adhoc_worker:
+    <<: *redash-service
+    command: worker
+    depends_on:
+      - redash_server
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+    environment:
+      <<: *redash-environment
+      REDASH_QUERY_RESULTS_CLEANUP_ENABLED: "true"
+      REDASH_QUERY_RESULTS_CLEANUP_MAX_AGE: "7"
+      QUEUES: "queries"
+      WORKERS_COUNT: 2
+
+  redash_worker:
+    <<: *redash-service
+    command: worker
+    environment:
+      <<: *redash-environment
+      QUEUES: "periodic,emails,default"
+      WORKERS_COUNT: 1
+
+  # Monitoring Services
+  prometheus:
+    image: prom/prometheus:latest
+    environment:
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
+    volumes:
+      - ./config/prometheus_config.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+      - ./tmp/prometheus:/tmp/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - scraper_network
+    depends_on:
+      - app
+      - celery_worker
+      - celery_beat
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin_password
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - "3000:3000"
+    networks:
+      - scraper_network
+    depends_on:
+      - prometheus
+
+networks:
+  scraper_network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  mongodb_data:
+  postgres_data:
