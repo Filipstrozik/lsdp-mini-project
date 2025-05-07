@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  CELERY_BROKER_URL: amqp://user:password@polwro-rabbitmq:5672//
+  CELERY_RESULT_BACKEND: redis://polwro-redis-master:6379/0
+  REDIS_HOST: polwro-redis-master
+  CELERY_RESULT_EXPIRES: '86400'
+  CELERYD_CONCURRENCY: '1'
+  RABBITMQ_HOST: rabbitmq
+  GF_SECURITY_ADMIN_PASSWORD: admin
+  GF_SECURITY_ADMIN_USER: admin
+  HADOOP_USER_NAME: root
+  HF_HOME: /app/hf_cache
+  MONGODB_HOST: polwro-mongodb
+  MONGO_INITDB_ROOT_PASSWORD: example
+  MONGO_INITDB_ROOT_USERNAME: root
+  PUSHGATEWAY_URL: http://polwro-prometheus-pushgateway:9091
+  POLWRO_USERNAME: filipstudent
+  POLWRO_PASSWORD: Ci3mny85
+metadata:
+  name: polwro-env

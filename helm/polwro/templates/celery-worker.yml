@@ -1,0 +1,67 @@
+{{- $common := .Values.celeryCommon }}
+{{- range $name, $cfg := dict "worker" .Values.celeryWorker }}
+{{- if $cfg }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "polwro.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "polwro.labels" $ | nindent 4 }}
+    worker: {{ $name }}
+spec:
+  replicas: {{ $.Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "polwro.selectorLabels" $ | nindent 6 }}
+      worker: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "polwro.labels" $ | nindent 8 }}
+        worker: {{ $name }}
+    spec:
+      containers:
+        - name: worker
+          image: {{ $cfg.image.repository }}:{{ $cfg.image.tag }}
+          imagePullPolicy: {{ $cfg.image.pullPolicy | default "IfNotPresent" }}
+          command:
+            - sh
+            - -c
+            - |
+              celery -A celery_app worker --loglevel=info
+          envFrom:
+            - configMapRef:
+                name: {{ include "polwro.fullname" $ }}-env
+          volumeMounts:
+              - name: data
+                mountPath: /app/data
+          livenessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - celery_app
+                - status
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - celery_app
+                - status
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: data
+          hostPath:
+            path: {{ tpl $common.volumeRoot $ }}/data
+            type: DirectoryOrCreate
+---
+{{- end }}
+{{- end }}

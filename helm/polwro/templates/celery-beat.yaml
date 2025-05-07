@@ -1,0 +1,51 @@
+{{- if .Values.celeryBeat }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "polwro.fullname" . }}-beat
+  labels:
+    {{- include "polwro.labels" . | nindent 4 }}
+    component: beat
+spec:
+  replicas: {{ .Values.celeryBeat.replicaCount }}
+  selector:
+    matchLabels:
+      component: beat
+  template:
+    metadata:
+      labels:
+        {{- include "polwro.labels" . | nindent 8 }}
+        component: beat
+    spec:
+      containers:
+        - name: beat
+          image: "{{ .Values.celeryBeat.image.repository }}:{{ .Values.celeryBeat.image.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              celery -A celery_app beat --loglevel=info
+          envFrom:
+            - configMapRef:
+                name: polwro-env
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          livenessProbe:
+            exec:
+              command: ["pgrep", "-f", "celery.beat"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["pgrep", "-f", "celery.beat"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: data
+          hostPath:
+            path: {{ tpl .Values.celeryCommon.volumeRoot . }}/data
+            type: DirectoryOrCreate
+{{- end }}

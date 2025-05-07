@@ -16,3 +16,4 @@ protobuf
 sacremoses
 pyspark
 numpy
+pandas
