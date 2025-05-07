@@ -136,13 +136,16 @@ prometheus:
 
 grafana:
   persistence:
-    enabled: true
-    type: hostPath
-    path: "{{ tpl .Values.global.hostPathRoot . }}/grafana"
-    accessModes:
-      - ReadWriteOnce
-    size: 1Gi
-    storageClassName: "-"
+    enabled: false
+
+  adminUser: admin
+  adminPassword: admin
+  
+  extraVolumes:
+    - name: grafana-storage
+      hostPath:
+        path: '{{ .Values.global.hostPathRoot }}/grafana'
+        type: DirectoryOrCreate
 
 rabbitmqHost: polwro-rabbitmq
 redisHost: polwro-redis-master
