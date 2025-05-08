@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package inference;
+
+service InferenceService {
+  // Perform inference on text input
+  rpc Predict (PredictRequest) returns (PredictResponse) {}
+  
+  // Get model health status
+  rpc Health (HealthRequest) returns (HealthResponse) {}
+}
+
+message PredictRequest {
+  string text = 1;
+}
+
+message PredictResponse {
+  string prediction = 1;
+  float confidence = 2;
+  string rating = 3;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  enum Status {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+  }
+  Status status = 1;
+}
