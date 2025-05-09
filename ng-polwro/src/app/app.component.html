@@ -1,0 +1,21 @@
+<div class="container">
+  <h1 class="title">{{ title }}</h1>
+  <textarea
+    [(ngModel)]="inputText"
+    placeholder="Wpisz opinię prowadzącego..."
+    class="input-box"
+    rows="6"
+  ></textarea>
+  <button (click)="send()" [disabled]="loading || !inputText" class="send-btn">
+    {{ loading ? 'Przetwarzanie...' : 'Wyślij' }}
+  </button>
+
+  <div *ngIf="rating !== null" class="result">
+    <p>Ocena: <strong>{{ rating }}</strong></p>
+    <p>Confidence: <strong>{{ confidence | number:'1.2-2' }}</strong></p>
+  </div>
+
+  <div *ngIf="error" class="error">
+    {{ error }}
+  </div>
+</div>

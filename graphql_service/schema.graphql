@@ -1,0 +1,12 @@
+# schema.graphql
+
+type PredictionResult {
+  prediction: String!
+  confidence: Float!
+  rating: Int!
+}
+
+type Query {
+  hello: String!
+  predict(text: String!): PredictionResult
+}
