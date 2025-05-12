@@ -48,3 +48,8 @@ helm_rollback:
 
 helm_uninstall:
 	helm uninstall polwro
+
+make port:
+	kubectl port-forward service/frontend-service 4200:80 &
+	kubectl port-forward service/graphql-service  5000:5000 &
+	kubectl port-forward service/grpc-service 50051:50051 &

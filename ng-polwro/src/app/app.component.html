@@ -1,21 +1,45 @@
 <div class="container">
-  <h1 class="title">{{ title }}</h1>
-  <textarea
-    [(ngModel)]="inputText"
-    placeholder="Wpisz opinię prowadzącego..."
-    class="input-box"
-    rows="6"
-  ></textarea>
-  <button (click)="send()" [disabled]="loading || !inputText" class="send-btn">
-    {{ loading ? 'Przetwarzanie...' : 'Wyślij' }}
-  </button>
+  <mat-card class="main-card">
+    <mat-card-header>
+      <mat-card-title>{{ title }}</mat-card-title>
+    </mat-card-header>
 
-  <div *ngIf="rating !== null" class="result">
-    <p>Ocena: <strong>{{ rating }}</strong></p>
-    <p>Confidence: <strong>{{ confidence | number:'1.2-2' }}</strong></p>
-  </div>
+    <mat-card-content>
+      <div class="examples">
+        <button mat-stroked-button color="accent" (click)="inputText = exampleNegative">
+          Przykład negatywnej opinii
+        </button>
+        <button mat-stroked-button color="accent" (click)="inputText = examplePositive">
+          Przykład pozytywnej opinii
+        </button>
+      </div>
 
-  <div *ngIf="error" class="error">
-    {{ error }}
-  </div>
+      <mat-form-field appearance="fill" class="input-box">
+        <mat-label>Wpisz opinię prowadzącego...</mat-label>
+        <textarea
+          matInput
+          [(ngModel)]="inputText"
+          rows="6"
+        ></textarea>
+      </mat-form-field>
+
+      <div class="action-container">
+        <button mat-raised-button color="primary" (click)="send()" [disabled]="loading || !inputText">
+          <mat-spinner diameter="20" *ngIf="loading"></mat-spinner>
+          <span *ngIf="!loading">Wyślij</span>
+        </button>
+      </div>
+
+      <mat-divider *ngIf="rating !== null"></mat-divider>
+
+      <div *ngIf="rating !== null" class="result">
+        <p>Ocena: <strong>{{ rating }}</strong></p>
+        <p>Pewność: <strong>{{ confidence | number:'1.2-2' }}</strong></p>
+      </div>
+
+      <div *ngIf="error" class="error">
+        {{ error }}
+      </div>
+    </mat-card-content>
+  </mat-card>
 </div>

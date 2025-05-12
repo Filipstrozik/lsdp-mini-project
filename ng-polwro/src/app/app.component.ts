@@ -1,14 +1,29 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, HttpClientModule, FormsModule, CommonModule],
+  imports: [
+    RouterOutlet,
+    FormsModule,
+    CommonModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCardModule,
+    MatDividerModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
@@ -19,6 +34,9 @@ export class AppComponent {
   confidence: number | null = null;
   loading = false;
   error: string | null = null;
+
+  exampleNegative: string = 'Prowadzący nie potrafił jasno przekazać materiału, co utrudniało zrozumienie tematu. Zajęcia były chaotyczne i brakowało im struktury. Często odbiegał od tematu, co wprowadzało zamieszanie. Nie odpowiadał wyczerpująco na pytania studentów. Ogólnie prowadzenie zajęć pozostawiało wiele do życzenia.';
+  examplePositive: string = 'Prowadzący był doskonale przygotowany, przekazywał materiał w sposób jasny i zorganizowany. Zachęcał do aktywnego udziału i wyczerpująco odpowiadał na pytania. Zajęcia miały logiczną strukturę, co znacząco ułatwiało przyswajanie wiedzy.';
 
   constructor(private http: HttpClient) {}
 

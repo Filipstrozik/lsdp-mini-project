@@ -1,10 +1,27 @@
 .container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 40px auto;
   padding: 20px;
-  background: #fdfdfd;
-  border-radius: 8px;
+  background: #000000;
+  border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+} 
+
+.main-card {
+  background-color: #424242;
+  color: white;
+}
+
+mat-card-header {
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.examples {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 24px;
 }
 
 .title {
@@ -21,6 +38,7 @@
   padding: 12px;
   font-size: 1rem;
   resize: vertical;
+  box-sizing: border-box;
 }
 
 .send-btn {
@@ -45,14 +63,37 @@
   background-color: #005fa3;
 }
 
+.action-container {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
+
+  button {
+    min-width: 120px;
+    
+    mat-spinner {
+      display: inline-block;
+      margin-right: 8px;
+    }
+  }
+}
+
 .result {
-  margin-top: 20px;
-  font-size: 1.1rem;
-  color: #444;
+  margin-top: 24px;
+  text-align: center;
+  
+  p {
+    margin: 8px 0;
+    font-size: 1.1rem;
+    
+    strong {
+      color: #ffd740;  // Material accent color
+    }
+  }
 }
 
 .error {
   margin-top: 20px;
-  color: #d32f2f;
+  color: #f44336;  // Material error color
   text-align: center;
 }

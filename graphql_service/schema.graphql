@@ -3,7 +3,7 @@
 type PredictionResult {
   prediction: String!
   confidence: Float!
-  rating: Int!
+  rating: String!
 }
 
 type Query {

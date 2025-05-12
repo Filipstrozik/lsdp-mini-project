@@ -17,3 +17,13 @@ sacremoses
 pyspark
 numpy
 pandas
+
+# grpc
+
+grpcio
+grpcio-tools
+protobuf
+
+ariadne
+flask
+flask-cors

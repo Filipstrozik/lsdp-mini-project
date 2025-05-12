@@ -1,8 +1,11 @@
 # app.py
 
 import logging
+import os
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+
 from ariadne import (
     gql,
     graphql_sync,
@@ -27,7 +30,10 @@ def resolve_hello(_, info):
 @query.field("predict")
 def resolve_predict(_, info, text):
     # initialize gRPC client
-    client = InferenceClient(host="localhost", port=50051)
+    client = InferenceClient(
+        host=os.getenv("GRPC_INFERENCE_HOST", "localhost"),
+        port=int(os.getenv("GRPC_INFERENCE_PORT", "50051")),
+    )
     if not client.check_health():
         # service down → return null
         return None
@@ -55,6 +61,7 @@ def create_app():
         static_folder="../frontend/build",
         template_folder="../frontend/build",
     )
+    CORS(app)  # enable CORS for all routes and origins
 
     @app.route("/")
     def index():
@@ -82,4 +89,4 @@ def create_app():
 if __name__ == "__main__":
     # run Flask dev server
     app = create_app()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="localhost", port=5000, debug=True)

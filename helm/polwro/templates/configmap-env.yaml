@@ -17,5 +17,7 @@ data:
   PUSHGATEWAY_URL: http://polwro-prometheus-pushgateway:9091
   POLWRO_USERNAME: filipstudent
   POLWRO_PASSWORD: Ci3mny85
+  GRPC_INFERENCE_HOST: grpc-service
+  GRPC_INFERENCE_PORT: '50051'
 metadata:
   name: polwro-env

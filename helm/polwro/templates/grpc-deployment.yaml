@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc
+  template:
+    metadata:
+      labels:
+        app: grpc
+    spec:
+      containers:
+      - name: grpc-container
+        image: filipstrozik/lsdp:latest
+        ports:
+        - containerPort: 50051
+        envFrom:
+        - configMapRef:
+            name: {{ include "polwro.fullname" $ }}-env
+        command: ["python", "-m", "inference_service.server.inference_server"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-service
+spec:
+  selector:
+    app: grpc
+  ports:
+  - port: 50051
+    protocol: TCP
+    targetPort: 50051
+  type: ClusterIP
