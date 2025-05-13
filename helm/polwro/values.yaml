@@ -1,7 +1,10 @@
 replicaCount: 1
+
 imagePullPolicy: IfNotPresent
 global:
   hostPathRoot: /Users/filipstrozik/Documents/studies/IIISEM/lsdp-mini-project/k3d/data
+
+allContainers: 0
 
 image:
   tag: latest
@@ -76,7 +79,7 @@ resources:
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 100
+  maxReplicas: 1
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
@@ -94,6 +97,8 @@ redis:
       enabled: true
       storageClass: local-path
       size: 1Gi
+  replica:
+    replicaCount: 1
 
 rabbitmq:
   auth:
@@ -104,16 +109,16 @@ rabbitmq:
     storageClass: local-path
     size: 1Gi
 
-# mongodb:
-#   auth:
-#     rootUser: root
-#     rootPassword: example
-#   persistence:
-#     enabled: true
-#     # storageClass: "-"
-#     storageClass: local-path
-#     size: 2Gi
-#     # hostPath: "{{ tpl .Values.global.hostPathRoot . }}/mongodb"
+mongodb:
+  auth:
+    rootUser: root
+    rootPassword: example
+  persistence:
+    enabled: true
+    # storageClass: "-"
+    storageClass: local-path
+    size: 2Gi
+    # hostPath: "{{ tpl .Values.global.hostPathRoot . }}/mongodb"
 
 mongodb:
   rootUsername: root

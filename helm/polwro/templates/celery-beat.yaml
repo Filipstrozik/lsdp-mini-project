@@ -1,4 +1,5 @@
 {{- if .Values.celeryBeat }}
+{{- if .Values.allContainers }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -49,3 +50,4 @@ spec:
             path: {{ tpl .Values.celeryCommon.volumeRoot . }}/data
             type: DirectoryOrCreate
 {{- end }}
+{{- end}}

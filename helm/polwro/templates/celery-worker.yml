@@ -1,3 +1,4 @@
+{{- if .Values.allContainers }}
 {{- $common := .Values.celeryCommon }}
 {{- range $name, $cfg := dict "worker" .Values.celeryWorker }}
 {{- if $cfg }}
@@ -65,3 +66,4 @@ spec:
 ---
 {{- end }}
 {{- end }}
+{{- end}}
